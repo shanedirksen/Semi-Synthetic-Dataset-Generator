@@ -1,0 +1,39 @@
+global proc addMEL(string $array)
+{
+    string $buffer[];
+    $numTokens = `tokenize $array "," $buffer`;
+
+    string $selection[] = `ls -os -fl`;  //grabs objects, puts in order, flattens
+    string $faceNames[] = `filterExpand -selectionMask 34 - expand true $selection`;
+    string $objectToInstance;
+    $selection = stringArrayRemove($faceNames, $selection);
+
+    matrix $m[4][4] = <<
+            ((float)$buffer[0]), ((float)$buffer[1]), ((float)$buffer[2]), ((float)$buffer[3]);
+            ((float)$buffer[4]), ((float)$buffer[5]), ((float)$buffer[6]), ((float)$buffer[7]);
+            ((float)$buffer[8]), ((float)$buffer[9]), ((float)$buffer[10]), ((float)$buffer[11]);
+            ((float)$buffer[12]), ((float)$buffer[13]), ((float)$buffer[14]), ((float)$buffer[15]) >>;
+
+
+    for ($objectToInstance in $selection){
+
+            float $bb[] = `getAttr ($objectToInstance + ".boundingBoxMin")`;
+            float $cc[] = `objectCenter -gl $objectToInstance`;
+            //Gets radius of object
+            float $radius = $cc[1] - $bb[1];
+
+        if( `objectType $objectToInstance` == "transform" ) {
+            string $newInstance[] = `instance $objectToInstance`;
+            string $pObjectName = $newInstance[0];
+            xform -ws -m
+                            ($m[0][0]) ($m[0][1]) ($m[0][2]) ($m[0][3])
+                            ($m[1][0]) ($m[1][1]) ($m[1][2]) ($m[1][3])
+                            ($m[2][0]) ($m[2][1]) ($m[2][2]) ($m[2][3])
+                            ($m[3][0]) ($m[3][1]) ($m[3][2]) ($m[3][3]) $pObjectName;
+
+            move -relative -objectSpace -worldSpaceDistance 0 $radius 0 $pObjectName; //question this because theyre still tiny
+        }
+    }
+
+    //return $m;
+}
